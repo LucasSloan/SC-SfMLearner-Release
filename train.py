@@ -84,7 +84,7 @@ def main():
         from datasets.stacked_sequence_folders import SequenceFolder
     elif args.dataset_format == 'sequential':
         from datasets.sequence_folders import SequenceFolder
-    timestamp = datetime.datetime.now().strftime("%m-%d-%H:%M")
+    timestamp = datetime.datetime.now().strftime("%m-%d-%H-%M")
     args.save_path = 'checkpoints'/Path(args.name)/timestamp
     print('=> will save everything to {}'.format(args.save_path))
     args.save_path.makedirs_p()
