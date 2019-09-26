@@ -1,5 +1,5 @@
 import argparse
-import scipy.misc
+import imageio
 import numpy as np
 from pebble import ProcessPool
 import sys
@@ -44,7 +44,7 @@ def dump_example(args, scene):
         for sample in data_loader.get_scene_imgs(scene_data):
             img, frame_nb = sample["img"], sample["id"]
             dump_img_file = dump_dir/'{}.jpg'.format(frame_nb)
-            scipy.misc.imsave(dump_img_file, img)
+            imageio.imsave(dump_img_file, img)
             if "pose" in sample.keys():
                 poses.append(sample["pose"].tolist())
             if "depth" in sample.keys():
