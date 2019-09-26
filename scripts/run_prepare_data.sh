@@ -13,3 +13,5 @@ python data/prepare_train_data.py $DATASET --dataset-format 'kitti_raw' --dump-r
 # DATASET=/media/bjw/Disk/Dataset/kitti_odom/
 # TRAIN_SET=/media/bjw/Disk/Dataset/kitti_vo_256/
 # python data/prepare_train_data.py $DATASET --dataset-format 'kitti_odom' --dump-root $TRAIN_SET --width 832 --height 256 --num-threads 4
+
+# python data/prepare_train_data.py D:\kitti\odometry\data_odometry_color --dataset-format 'kitti_odom' --dump-root D:\kitti\SC-SfM-odom --width 832 --height 256 --num-threads 1
