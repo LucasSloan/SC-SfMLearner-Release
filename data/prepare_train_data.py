@@ -9,7 +9,7 @@ from path import Path
 parser = argparse.ArgumentParser()
 parser.add_argument("dataset_dir", metavar='DIR',
                     help='path to original dataset')
-parser.add_argument("--dataset-format", type=str, default='kitti_raw', choices=["kitti_raw", "cityscapes", "kitti_odom"])
+parser.add_argument("--dataset-format", type=str, default='kitti_raw', choices=["kitti_raw", "cityscapes", "kitti_odom", "comma"])
 parser.add_argument("--static-frames", default=None,
                     help="list of imgs to discard for being static, if not set will discard them based on speed \
                     (careful, on KITTI some frames have incorrect speed)")
@@ -85,6 +85,12 @@ def main():
         data_loader = cityscapes_loader(args.dataset_dir,
                                         img_height=args.height,
                                         img_width=args.width)
+
+    if args.dataset_format == "comma":
+        from commaai_2k19_loader import CommaaiLoader
+        data_loader = CommaaiLoader(args.dataset_dir,
+                                    img_height=args.height,
+                                    img_width=args.width)
 
     n_scenes = len(data_loader.scenes)
     print('Found {} potential scenes'.format(n_scenes))
