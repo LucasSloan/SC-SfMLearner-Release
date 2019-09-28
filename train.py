@@ -226,10 +226,10 @@ def main():
         save_checkpoint(
             args.save_path, {
                 'epoch': epoch + 1,
-                'state_dict': disp_net.module.state_dict()
+                'state_dict': disp_net.state_dict()
             }, {
                 'epoch': epoch + 1,
-                'state_dict': pose_net.module.state_dict()
+                'state_dict': pose_net.state_dict()
             },
             is_best)
 
