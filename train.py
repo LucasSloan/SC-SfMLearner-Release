@@ -16,9 +16,6 @@ from utils import save_checkpoint
 from loss_functions import compute_smooth_loss, compute_photo_and_geometry_loss, compute_errors
 from logger import TermLogger, AverageMeter
 from tensorboardX import SummaryWriter
-import os
-
-os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 
 
 parser = argparse.ArgumentParser(description='Unsupervised Scale-consistent Depth and Ego-motion Learning from Monocular Video (KITTI and CityScapes)',
@@ -163,8 +160,8 @@ def main():
         disp_net.init_weights()
 
     cudnn.benchmark = True
-    disp_net = torch.nn.DataParallel(disp_net)
-    pose_net = torch.nn.DataParallel(pose_net)
+    # disp_net = torch.nn.DataParallel(disp_net)
+    # pose_net = torch.nn.DataParallel(pose_net)
 
     print('=> setting adam solver')
 
