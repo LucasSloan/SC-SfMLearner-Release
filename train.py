@@ -356,6 +356,7 @@ def validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger):
         logger.valid_bar.update(i+1)
         if i % args.print_freq == 0:
             logger.valid_writer.write('valid: Time {} Loss {}'.format(batch_time, losses))
+            print(poses)
 
     logger.valid_bar.update(len(val_loader))
     return losses.avg, ['Total loss', 'Photo loss', 'Smooth loss', 'Consistency loss']
