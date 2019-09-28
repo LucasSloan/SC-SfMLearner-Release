@@ -16,6 +16,9 @@ from utils import save_checkpoint
 from loss_functions import compute_smooth_loss, compute_photo_and_geometry_loss, compute_errors
 from logger import TermLogger, AverageMeter
 from tensorboardX import SummaryWriter
+import os
+
+os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 
 
 parser = argparse.ArgumentParser(description='Unsupervised Scale-consistent Depth and Ego-motion Learning from Monocular Video (KITTI and CityScapes)',
