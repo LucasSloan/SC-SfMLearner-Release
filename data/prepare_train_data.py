@@ -51,7 +51,7 @@ def dump_example(args, scene):
                 dump_depth_file = dump_dir/'{}.npy'.format(frame_nb)
                 np.save(dump_depth_file, sample["depth"])
         if len(poses) != 0:
-            np.savetxt(poses_file, np.array(poses).reshape(-1, 12), fmt='%.6e')
+            np.savetxt(poses_file, np.array(poses).reshape(-1, 1), fmt='%.6e')
 
         if len(dump_dir.files('*.jpg')) < 3:
             dump_dir.rmtree()

@@ -37,11 +37,12 @@ class SequenceFolder(data.Dataset):
         shifts.pop(demi_length)
         for scene in self.scenes:
             intrinsics = np.genfromtxt(scene/'cam.txt').astype(np.float32).reshape((3, 3))
+            poses = np.genfromtxt(scene/'poses.txt').astype(np.float32)
             imgs = sorted(scene.files('*.jpg'))
             if len(imgs) < sequence_length:
                 continue
             for i in range(demi_length, len(imgs)-demi_length):
-                sample = {'intrinsics': intrinsics, 'tgt': imgs[i], 'ref_imgs': []}
+                sample = {'intrinsics': intrinsics, 'tgt': imgs[i], 'ref_imgs': [], 'pose': poses[i]}
                 for j in shifts:
                     sample['ref_imgs'].append(imgs[i+j])
                 sequence_set.append(sample)
@@ -58,7 +59,8 @@ class SequenceFolder(data.Dataset):
             ref_imgs = imgs[1:]
         else:
             intrinsics = np.copy(sample['intrinsics'])
-        return tgt_img, ref_imgs, intrinsics, np.linalg.inv(intrinsics)
+        pose = sample['pose']
+        return tgt_img, ref_imgs, intrinsics, np.linalg.inv(intrinsics), pose
 
     def __len__(self):
         return len(self.samples)

@@ -2,6 +2,7 @@ import glob
 import cv2
 import numpy as np
 import os
+import hashlib
 
 class CommaaiLoader(object):
     def __init__(self,
@@ -33,7 +34,7 @@ class CommaaiLoader(object):
         intrinsics[0,:] *=  zoom_x
         intrinsics[1,:] *=  zoom_y
 
-        return [{'intrinsics': intrinsics, 'dir': sequence, 'rel_path': str(hash(os.path.relpath(sequence, self.dataset_dir)))}]
+        return [{'intrinsics': intrinsics, 'dir': sequence, 'rel_path': hashlib.sha224(sequence.encode('utf-8')).hexdigest()[:20] + "_1"}]
 
     # yields sample objects for the scene
     # a sample object has the following fields:
@@ -41,6 +42,8 @@ class CommaaiLoader(object):
     #   id            the number of the frame
     def get_scene_imgs(self, scene_data):
         cam = cv2.VideoCapture(scene_data['dir'] + "/video.hevc")
+        frame_velocities =  np.linalg.norm(np.load(scene_data['dir'] + '/global_pose/frame_velocities'),axis=1)
+        frame_velocities = list(map(lambda x: x.item(), frame_velocities))
 
         current_frame = 0
         while(True):
@@ -50,6 +53,6 @@ class CommaaiLoader(object):
                 img = cv2.resize(frame, (self.img_width, self.img_height), interpolation=cv2.INTER_AREA)
                 img = np.asarray(img)
 
-                yield {"img": img, "id": current_frame}
+                yield {"img": img, "id": current_frame, "pose": np.array(frame_velocities[current_frame-1])}
             else:
                 break

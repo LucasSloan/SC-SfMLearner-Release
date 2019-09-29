@@ -253,7 +253,7 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
     end = time.time()
     logger.train_bar.update(0)
 
-    for i, (tgt_img, ref_imgs, intrinsics, intrinsics_inv) in enumerate(train_loader):
+    for i, (tgt_img, ref_imgs, intrinsics, intrinsics_inv, pose) in enumerate(train_loader):
         log_losses = i > 0 and n_iter % args.print_freq == 0
         
         # measure data loading time
@@ -322,11 +322,12 @@ def validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger):
 
     end = time.time()
     logger.valid_bar.update(0)
-    for i, (tgt_img, ref_imgs, intrinsics, intrinsics_inv) in enumerate(val_loader):
+    for i, (tgt_img, ref_imgs, intrinsics, intrinsics_inv, pose) in enumerate(val_loader):
         tgt_img = tgt_img.to(device)
         ref_imgs = [img.to(device) for img in ref_imgs]
         intrinsics = intrinsics.to(device)
         intrinsics_inv = intrinsics_inv.to(device)
+        pose = pose.to(device)
 
         # compute output
         tgt_depth = [1 / disp_net(tgt_img)]
@@ -336,6 +337,13 @@ def validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger):
             ref_depths.append(ref_depth)
 
         poses, poses_inv = compute_pose_with_inv(pose_net, tgt_img, ref_imgs)
+
+        translations = [x[:, :3] for x in poses]
+        translations_inv = [x[:, :3] for x in poses_inv]
+
+        p_speeds = torch.norm(translations[0], dim=1)
+
+        correlation = pearsonr(pose, p_speeds)
         
         loss_1, loss_3 = compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, ref_depths, 
                                                         args.with_mask, poses, poses_inv, args.num_scales,
@@ -357,10 +365,45 @@ def validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger):
         if i % args.print_freq == 0:
             logger.valid_writer.write('valid: Time {} Loss {}'.format(batch_time, losses))
             print(poses)
+            print(correlation)
 
     logger.valid_bar.update(len(val_loader))
     return losses.avg, ['Total loss', 'Photo loss', 'Smooth loss', 'Consistency loss']
 
+def pearsonr(x, y):
+    """
+    Mimics `scipy.stats.pearsonr`
+
+    Arguments
+    ---------
+    x : 1D torch.Tensor
+    y : 1D torch.Tensor
+
+    Returns
+    -------
+    r_val : float
+        pearsonr correlation coefficient between x and y
+    
+    Scipy docs ref:
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pearsonr.html
+    
+    Scipy code ref:
+        https://github.com/scipy/scipy/blob/v0.19.0/scipy/stats/stats.py#L2975-L3033
+    Example:
+        >>> x = np.random.randn(100)
+        >>> y = np.random.randn(100)
+        >>> sp_corr = scipy.stats.pearsonr(x, y)[0]
+        >>> th_corr = pearsonr(torch.from_numpy(x), torch.from_numpy(y))
+        >>> np.allclose(sp_corr, th_corr)
+    """
+    mean_x = torch.mean(x)
+    mean_y = torch.mean(y)
+    xm = x.sub(mean_x)
+    ym = y.sub(mean_y)
+    r_num = xm.dot(ym)
+    r_den = torch.norm(xm, 2) * torch.norm(ym, 2)
+    r_val = r_num / r_den
+    return r_val
 
 @torch.no_grad()
 def validate_with_gt(args, val_loader, disp_net, epoch, logger):
