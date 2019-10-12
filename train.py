@@ -322,10 +322,8 @@ def validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger):
 
     end = time.time()
     logger.valid_bar.update(0)
-    all_speeds = torch.tensor([])
-    all_speeds.to(device)
-    all_p_speeds = torch.tensor([])
-    all_p_speeds.to(device)
+    all_speeds = torch.tensor([], device=device)
+    all_p_speeds = torch.tensor([], device=device)
     for i, (tgt_img, ref_imgs, intrinsics, intrinsics_inv, speed) in enumerate(val_loader):
         tgt_img = tgt_img.to(device)
         ref_imgs = [img.to(device) for img in ref_imgs]
