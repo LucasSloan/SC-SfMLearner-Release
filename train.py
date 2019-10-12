@@ -208,7 +208,7 @@ def main():
         if args.with_gt:
             errors, error_names = validate_with_gt(args, val_loader, disp_net, epoch, logger)
         else:
-            errors, error_names = validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger)
+            errors, correlation, error_names = validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger)
         error_string = ', '.join('{} : {:.3f}'.format(name, error) for name, error in zip(error_names, errors))
         logger.valid_writer.write(' * Avg {}'.format(error_string))
 
@@ -216,13 +216,13 @@ def main():
             training_writer.add_scalar(name, error, epoch)
 
         # Up to you to chose the most relevant error to measure your model's performance, careful some measures are to maximize (such as a1,a2,a3)
-        decisive_error = errors[1]
+        decisive_error = correlation
         if best_error < 0:
             best_error = decisive_error
 
         # remember lowest error and save checkpoint
-        is_best = decisive_error < best_error
-        best_error = min(best_error, decisive_error)
+        is_best = decisive_error > best_error
+        best_error = max(best_error, decisive_error)
         save_checkpoint(
             args.save_path, {
                 'epoch': epoch + 1,
@@ -322,12 +322,16 @@ def validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger):
 
     end = time.time()
     logger.valid_bar.update(0)
-    for i, (tgt_img, ref_imgs, intrinsics, intrinsics_inv, pose) in enumerate(val_loader):
+    all_speeds = torch.tensor([])
+    all_speeds.to(device)
+    all_p_speeds = torch.tensor([])
+    all_p_speeds.to(device)
+    for i, (tgt_img, ref_imgs, intrinsics, intrinsics_inv, speed) in enumerate(val_loader):
         tgt_img = tgt_img.to(device)
         ref_imgs = [img.to(device) for img in ref_imgs]
         intrinsics = intrinsics.to(device)
         intrinsics_inv = intrinsics_inv.to(device)
-        pose = pose.to(device)
+        speed = speed.to(device)
 
         # compute output
         tgt_depth = [1 / disp_net(tgt_img)]
@@ -343,7 +347,8 @@ def validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger):
 
         p_speeds = torch.norm(translations[0], dim=1)
 
-        correlation = pearsonr(pose, p_speeds)
+        all_speeds = torch.cat((all_speeds, speed))
+        all_p_speeds = torch.cat((all_p_speeds, p_speeds))
         
         loss_1, loss_3 = compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, ref_depths, 
                                                         args.with_mask, poses, poses_inv, args.num_scales,
@@ -364,11 +369,10 @@ def validate_without_gt(args, val_loader, disp_net, pose_net, epoch, logger):
         logger.valid_bar.update(i+1)
         if i % args.print_freq == 0:
             logger.valid_writer.write('valid: Time {} Loss {}'.format(batch_time, losses))
-            print(poses)
-            print(correlation)
 
+    correlation = pearsonr(all_speeds, all_p_speeds)
     logger.valid_bar.update(len(val_loader))
-    return losses.avg, ['Total loss', 'Photo loss', 'Smooth loss', 'Consistency loss']
+    return losses.avg, correlation, ['Total loss', 'Photo loss', 'Smooth loss', 'Consistency loss']
 
 def pearsonr(x, y):
     """

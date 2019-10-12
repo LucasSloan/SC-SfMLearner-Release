@@ -1,3 +1,4 @@
+from blessings import Terminal
 import progressbar
 import sys
 
@@ -7,21 +8,23 @@ class TermLogger(object):
         self.n_epochs = n_epochs
         self.train_size = train_size
         self.valid_size = valid_size
+        self.t = Terminal()
         s = 10
         e = 1   # epoch bar position
         tr = 3  # train bar position
         ts = 6  # valid bar position
-        h = 0
+        value = self.t.height
+        h = int(0 if value is None else value)
         
         for i in range(10):
             print('')
-        self.epoch_bar = progressbar.ProgressBar(max_value=n_epochs, fd=Writer((0, h-s+e)))
+        self.epoch_bar = progressbar.ProgressBar(max_value=n_epochs, fd=Writer(self.t, (0, h-s+e)))
 
-        self.train_writer = Writer((0, h-s+tr))
-        self.train_bar_writer = Writer((0, h-s+tr+1))
+        self.train_writer = Writer(self.t, (0, h-s+tr))
+        self.train_bar_writer = Writer(self.t, (0, h-s+tr+1))
 
-        self.valid_writer = Writer((0, h-s+ts))
-        self.valid_bar_writer = Writer((0, h-s+ts+1))
+        self.valid_writer = Writer(self.t, (0, h-s+ts))
+        self.valid_bar_writer = Writer(self.t, (0, h-s+ts+1))
 
         self.reset_train_bar()
         self.reset_valid_bar()
@@ -40,15 +43,18 @@ class Writer(object):
     This is the glue between blessings and progressbar.
     """
 
-    def __init__(self, location):
+    def __init__(self, t, location):
         """
         Input: location - tuple of ints (x, y), the position
                         of the bar in the terminal
         """
         self.location = location
+        self.t = t
 
     def write(self, string):
-        print(string)
+        with self.t.location(*self.location):
+            sys.stdout.write("\033[K")
+            print(string)
 
     def flush(self):
         return
